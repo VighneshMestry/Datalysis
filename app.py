@@ -1,120 +1,108 @@
-import pandas as pd  # pip install pandas openpyxl
-import plotly.express as px  # pip install plotly-express
-import streamlit as st  # pip install streamlit
+import sqlite3
+from flask import Flask, Response, redirect, render_template, jsonify, request
+from streamlit.web.server import server
+from openpyxl import load_workbook
 
-# emojis: https://www.webfx.com/tools/emoji-cheat-sheet/
-st.set_page_config(page_title="Sales Dashboard", page_icon=":bar_chart:", layout="wide")
+app = Flask(__name__)
 
-# ---- READ EXCEL ----
-@st.cache_data
-def get_data_from_excel():
-    df = pd.read_excel(
-        io="supermarket_sales.xlsx",
-        engine="openpyxl",
-        sheet_name="Sales",
-        skiprows=3,
-        usecols="B:R",
-        nrows=1000,
-    )
-    # Add 'hour' column to dataframe
-    df["hour"] = pd.to_datetime(df["Time"], format="%H:%M:%S").dt.hour
-    return df
+@app.route('/') 
+def hello():
+    return render_template('login.html')
+def HomePage():
+    return redirect('http://localhost:8501')
 
-df = get_data_from_excel()
+if __name__ == '__main__':
+    # app.run(debug = True)
+    app.debug = True
+    app.run(host = '0.0.0.0', port=5000)
 
-# ---- SIDEBAR ----
-st.sidebar.header("Please Filter Here:")
-city = st.sidebar.multiselect(
-    "Select the City:",
-    options=df["City"].unique(),
-    default=df["City"].unique()
-)
+@app.route('/join', methods = ['GET', 'POST'])
+def hoJa():
+    email = request.form['email']
+    password = request.form['password']
+    print("python__________ ", email)
+    print(password)
+    if request.method == 'POST':
+        connection = sqlite3.connect('userdata.db')
+        cursor = connection.cursor()
+        email = request.form['email']
+        password = request.form['password']
+        print(email, password)
 
-customer_type = st.sidebar.multiselect(
-    "Select the Customer Type:",
-    options=df["Customer_type"].unique(),
-    default=df["Customer_type"].unique(),
-)
+        query = "SELECT email, password FROM userdata WHERE email = ? and password = ?"
+        cursor.execute(query, (email, password))
+        results = cursor.fetchall()
+        connection.commit()
+        connection.close()
+        print('results' , results)
+        if len(results) == 0:
+            print('Sorry worng credentials')
+            print("final checking ", email, password)
+            return redirect('https://www.elegantthemes.com/blog/wp-content/uploads/2019/12/401-error-wordpress-featured-image.jpg')
+        else:
+            return HomePage()
 
-gender = st.sidebar.multiselect(
-    "Select the Gender:",
-    options=df["Gender"].unique(),
-    default=df["Gender"].unique()
-)
+@app.route('/sign', methods = ['GET', 'POST'])
+def hoJaWaps():
+    username = request.form['username']
+    email = request.form['email']
+    password = request.form['password']
+    print(username)
+    print("python__________ ", email)
+    print(password)
+    connection = sqlite3.connect('userdata.db')
+    cur = connection.cursor()
+    queryChecking = "SELECT username, email FROM userdata where username = '"+username+"' and email = '"+email+"'"
 
-df_selection = df.query(
-    "City == @city & Customer_type ==@customer_type & Gender == @gender"
-)
+    cur.execute(queryChecking)
+    results = cur.fetchall()
+    print('results' , results)
 
-# ---- MAINPAGE ----
-st.title(":bar_chart: Sales Dashboard")
-st.markdown("##")
+    if len(results) == 0:
+         if any(char.isdigit() for char in password):
+            if len(password)>=8:
+                cur.execute("INSERT INTO userdata (username, email, password) VALUES (?, ?, ?)", (username, email, password))
+                # cur.execute(queryUpdating)
+                print("signup ", username, password)
+                connection.commit()
+                return render_template('login.html')
 
-# TOP KPI's
-total_sales = int(df_selection["Total"].sum())
-average_rating = round(df_selection["Rating"].mean(), 1)
-star_rating = ":star:" * int(round(average_rating, 0))
-average_sale_by_transaction = round(df_selection["Total"].mean(), 2)
+    else:
+        connection.commit()
+        print('failed')
+        return redirect('https://www.elegantthemes.com/blog/wp-content/uploads/2019/12/401-error-wordpress-featured-image.jpg')
 
-left_column, middle_column, right_column = st.columns(3)
-with left_column:
-    st.subheader("Total Sales:")
-    st.subheader(f"US $ {total_sales:,}")
-with middle_column:
-    st.subheader("Average Rating:")
-    st.subheader(f"{average_rating} {star_rating}")
-with right_column:
-    st.subheader("Average Sales Per Transaction:")
-    st.subheader(f"US $ {average_sale_by_transaction}")
+@app.route('/product_to_db', methods = ['GET', 'POST'])
+def ProductToDb():
+    place = request.form['place']
+    customer_type = request.form['customer_type']
+    product_line = request.form['product_line']
+    unit_price = request.form['unit_price']
+    total = request.form['total']
+    payment = request.form['payment']
+    gross_income = request.form['gross_income']
+    print(place, customer_type, product_line, unit_price, total, payment, gross_income)
 
-st.markdown("""---""")
+    wb = load_workbook('supermarket_sales.xlsx')
+    ws = wb.active
+    ws.append(['', '123-45-6789', 'A', place, customer_type, 'Male', product_line, unit_price, '10', '18.00', total, '########', '12:00', payment, '500.00', '4.761904762', gross_income, '10.0']) 
 
-# SALES BY PRODUCT LINE [BAR CHART]
-sales_by_product_line = (
-    df_selection.groupby(by=["Product line"]).sum()[["Total"]].sort_values(by="Total")
-)
-fig_product_sales = px.bar(
-    sales_by_product_line,
-    x="Total",
-    y=sales_by_product_line.index,
-    orientation="h",
-    title="<b>Sales by Product Line</b>",
-    color_discrete_sequence=["#0083B8"] * len(sales_by_product_line),
-    template="plotly_white",
-)
-fig_product_sales.update_layout(
-    plot_bgcolor="rgba(0,0,0,0)",
-    xaxis=(dict(showgrid=False))
-)
+    wb.save('supermarket_sales.xlsx')
 
-# SALES BY HOUR [BAR CHART]
-sales_by_hour = df_selection.groupby(by=["hour"]).sum()[["Total"]]
-fig_hourly_sales = px.bar(
-    sales_by_hour,
-    x=sales_by_hour.index,
-    y="Total",
-    title="<b>Sales by hour</b>",
-    color_discrete_sequence=["#0083B8"] * len(sales_by_hour),
-    template="plotly_white",
-)
-fig_hourly_sales.update_layout(
-    xaxis=dict(tickmode="linear"),
-    plot_bgcolor="rgba(0,0,0,0)",
-    yaxis=(dict(showgrid=False)),
-)
+    connection = sqlite3.connect('productdata.db')
+    cur = connection.cursor()
+    cur.execute("INSERT INTO productdata (place, customer_type, product_line, unit_price, total, payment, gross_income) VALUES (?, ?, ?, ?, ?, ?, ?)", (place, customer_type, product_line, unit_price, total, payment, gross_income))
+    connection.commit()
+    return redirect('http://localhost:8501')
 
+@app.route('/signup_page')
+def DisplaySignUp():
+    return render_template('signup.html')
 
-left_column, right_column = st.columns(2)
-left_column.plotly_chart(fig_hourly_sales, use_container_width=True)
-right_column.plotly_chart(fig_product_sales, use_container_width=True)
+@app.route('/login_page')
+def DisplayLogIn():
+    return render_template('login.html')
 
-
-# ---- HIDE STREAMLIT STYLE ----
-hide_st_style = """
-            <style>
-            #MainMenu {visibility: hidden;}
-            footer {visibility: hidden;}
-            header {visibility: hidden;}
-            </style>
-            """
-st.markdown(hide_st_style, unsafe_allow_html=True)
+@app.route('/add_product_page')
+def DisplayAddProductPage():
+    return render_template('addProduct.html')

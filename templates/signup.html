@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>DATALYSIS</title>
+    <!-- <link rel="stylesheet" href="index.css"> -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='stylesheets/login.css') }}" >
+    <link rel="stylesheet" href="../static/stylesheets/login.css">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+</head>
+<body>
+    <!-- NAVBAR CREATION -->
+   <header class="header">
+    <nav class="navbar">
+        <a href="#">Profile</a>
+        <a href="#">Dashboard</a>
+          <a href="#">About</a>
+          <a href="#">Contact</a>
+          <a href="#">Help</a>
+    </nav>
+    <form action="" class="search-bar">
+       <input type="text" placeholder="Search...">
+       <button><i class='bx bx-search'></i></button>
+    </form>
+   </header>
+    <!-- LOGIN FORM CREATION -->
+    <div class="background"></div>
+    <div class="container">
+        <div class="item">
+            <h5 class="logo"><i class='bx bxl-xing'></i>DATALYSIS</h5>
+            <div class="text-item">
+                <h2>Welcome! <br><span>
+                    To Our Datalysis
+                </span></h2>
+                <p>Real-time Data visibility</p>
+                <div class="social-icon">
+                    <a href="#"><i class='bx bxl-facebook'></i></a>
+                    <a href="#"><i class='bx bxl-twitter'></i></a>
+                    <a href="#"><i class='bx bxl-youtube'></i></a>
+                    <a href="#"><i class='bx bxl-instagram'></i></a>
+                    <a href="#"><i class='bx bxl-linkedin'></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="login-section">
+            <div class="form-box login">
+                <form action="/sign" method="POST">
+                    <h2>Sign Up</h2>
+
+                    <div class="input-box">
+                        <span class="icon"><i class='bx bxs-user'></i></span>
+                        <input type="text" name = 'username' id = "username" style="color:white;" required>
+                        <label >Username</label>
+                    </div>
+                    <div class="input-box">
+                        <span class="icon"><i class='bx bxs-envelope'></i></span>
+                        <input type="text" name = "email" id = "email" style="color:white;" required>
+                        <label >Email</label>
+                    </div>
+                    <div class="input-box">
+                        <span class="icon"><i class='bx bxs-lock-alt' ></i></span>
+                        <input type="password" name = "password" id = "password" style="color:white;" required>
+                        <label>Password</label>
+                    </div>
+                    <div class="remember-password">
+                        <label for=""><input type="checkbox">I agree with this statment</label>
+                    </div>
+                    <!-- <input type = "submit" value = "Sign Up" class = "btn"> -->
+                    <button class="btn" onclick="myFunction()">Login In</button>
+                    <div class="create-account">
+                        <p>Already Have An Account? <a href="/login_page" class="login-link">Sign In</a></p>
+                    </div>
+                </form>
+            </div>
+            <!-- <div class="form-box register">
+                
+            </div> -->
+        </div>
+    </div>
+     <!-- SIGN UP FORM CREATION -->
+
+    <script>
+        function myFunction() {
+            console.log('Js function executing');
+            var username = $('#username').val();
+            var email = $('#email').val();
+            var password = $('#password').val();
+            $.ajax({
+                url : "/sign",
+                type : "POST",
+                data : {
+                    username : username,
+                    email : email,
+                    password : password
+                }
+            })
+            console.log('js fucntion executed');
+            
+        }
+    </script>
+</body>
+
+</html>
